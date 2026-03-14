@@ -15,8 +15,8 @@ const validateToken = (token) => {
     return "トークンを入力してください。";
   }
 
-  if (!token.startsWith("secret_")) {
-    return "トークンは secret_ で始まる値を入力してください。";
+  if (!token.startsWith("ntn_")) {
+    return "トークンは ntn_ で始まる値を入力してください。";
   }
 
   if (token.length < 16) {
@@ -30,6 +30,7 @@ const loadStoredToken = async () => {
   const { notionToken } = await chrome.storage.local.get("notionToken");
   if (notionToken) {
     tokenInput.value = notionToken;
+    setStatus("保存済みのトークンを読み込みました。", "success");
   }
 };
 

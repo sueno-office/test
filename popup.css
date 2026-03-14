@@ -19,6 +19,11 @@ h1 {
   margin: 0 0 4px;
 }
 
+h2 {
+  font-size: 14px;
+  margin: 0;
+}
+
 label {
   font-size: 12px;
   font-weight: 600;
@@ -73,6 +78,35 @@ button.primary {
   font-size: 12px;
 }
 
+.properties {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 11px;
+  color: #666;
+}
+
+.properties-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.property-field {
+  display: grid;
+  gap: 4px;
+}
+
+.property-checkbox {
+  width: 20px;
+  height: 20px;
+}
+
 .status {
   min-height: 1.25em;
   font-size: 12px;
@@ -84,9 +118,4 @@ button.primary {
 
 .status.success {
   color: #1b7a2a;
-}
-
-ol {
-  margin: 8px 0 0;
-  padding-left: 20px;
 }
