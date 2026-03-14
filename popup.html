@@ -17,12 +17,12 @@
 
       <div class="row">
         <button id="open-options" type="button">設定を開く</button>
-        <button id="load-db" type="button">DB一覧を取得</button>
+        <button id="load-db" type="button">DB一覧を更新</button>
       </div>
 
       <label for="database-select">Database</label>
       <select id="database-select">
-        <option value="">先に「DB一覧を取得」を押してください</option>
+        <option value="">設定画面でDB一覧を取得してください</option>
       </select>
 
       <label for="title">タイトル</label>
@@ -31,18 +31,15 @@
       <label for="body">本文</label>
       <textarea id="body" rows="6" placeholder="本文を入力"></textarea>
 
+      <section id="properties-section" class="properties" hidden>
+        <h2>プロパティ</h2>
+        <p class="hint">対応型: rich_text / number / select / multi_select / checkbox / date / url / email / phone_number</p>
+        <div id="properties-fields" class="properties-fields"></div>
+      </section>
+
       <button id="create-page" class="primary" type="button">Notionに追加</button>
 
       <p id="status" class="status" aria-live="polite"></p>
-
-      <details>
-        <summary>使い方（初回）</summary>
-        <ol>
-          <li>NotionでIntegrationを作成しトークンを発行</li>
-          <li>対象DatabaseにIntegrationを招待（Share）</li>
-          <li>設定画面でトークンを保存→DB一覧取得</li>
-        </ol>
-      </details>
     </main>
 
     <script src="popup.js" type="module"></script>
