@@ -1,3 +1,11 @@
+import {
+  buildSinglePropertyValue,
+  findTitlePropertyName,
+  getDatabaseTitle,
+  getPropertyConfig,
+  supportedPropertyTypes
+} from "./notion-utils.mjs";
+
 const NOTION_VERSION = "2022-06-28";
 
 const tokenInput = document.getElementById("token");
@@ -23,37 +31,6 @@ const getHeaders = (token) => ({
   "Notion-Version": NOTION_VERSION,
   "Content-Type": "application/json"
 });
-
-const getDatabaseTitle = (database) => {
-  const titleArray = database.title || [];
-  if (!titleArray.length) {
-    return "(無題のDatabase)";
-  }
-  return titleArray.map((piece) => piece.plain_text).join("");
-};
-
-const findTitlePropertyName = (database) => {
-  for (const [name, config] of Object.entries(database.properties || {})) {
-    if (config.type === "title") {
-      return name;
-    }
-  }
-  return null;
-};
-
-const supportedPropertyTypes = new Set([
-  "rich_text",
-  "number",
-  "checkbox",
-  "select",
-  "multi_select",
-  "url",
-  "email",
-  "phone_number",
-  "date"
-]);
-
-const getPropertyConfig = (property) => property[property.type] || {};
 
 const renderDatabases = async (databases, selectedDatabaseId) => {
   databaseSelect.innerHTML = "";
@@ -107,12 +84,13 @@ const renderPropertyFields = (database) => {
       if (property.type === "multi_select") {
         input.multiple = true;
       }
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = property.type === "multi_select" ? "（複数選択可）" : "選択してください";
       if (property.type === "select") {
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "選択してください";
         input.append(placeholder);
       }
+
       const options = getPropertyConfig(property).options || [];
       for (const optionConfig of options) {
         const option = document.createElement("option");
@@ -146,38 +124,23 @@ const buildPropertyPayload = () => {
 
     if (propertyType === "checkbox") {
       if (field.checked) {
-        payload[propertyName] = { checkbox: true };
+        payload[propertyName] = buildSinglePropertyValue(propertyType, true);
       }
       continue;
     }
 
     if (propertyType === "multi_select") {
-      const selected = Array.from(field.selectedOptions).map((option) => option.value).filter(Boolean);
-      if (selected.length) {
-        payload[propertyName] = { multi_select: selected.map((name) => ({ name })) };
+      const selected = Array.from(field.selectedOptions).map((option) => option.value);
+      const notionValue = buildSinglePropertyValue(propertyType, selected);
+      if (notionValue) {
+        payload[propertyName] = notionValue;
       }
       continue;
     }
 
-    const value = field.value?.trim();
-    if (!value) {
-      continue;
-    }
-
-    if (propertyType === "rich_text") {
-      payload[propertyName] = { rich_text: [{ text: { content: value } }] };
-    } else if (propertyType === "number") {
-      payload[propertyName] = { number: Number(value) };
-    } else if (propertyType === "select") {
-      payload[propertyName] = { select: { name: value } };
-    } else if (propertyType === "url") {
-      payload[propertyName] = { url: value };
-    } else if (propertyType === "email") {
-      payload[propertyName] = { email: value };
-    } else if (propertyType === "phone_number") {
-      payload[propertyName] = { phone_number: value };
-    } else if (propertyType === "date") {
-      payload[propertyName] = { date: { start: value } };
+    const notionValue = buildSinglePropertyValue(propertyType, field.value);
+    if (notionValue) {
+      payload[propertyName] = notionValue;
     }
   }
 
