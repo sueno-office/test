@@ -11,7 +11,7 @@ NotionのDatabaseを選択し、タイトル・本文・追加プロパティを
 
 ## セットアップ（初回）
 
-1. NotionでIntegrationを作成し、`Internal Integration Token` を控える。
+1. NotionでIntegrationを作成し、`Internal Integration Token`（`ntn_` で始まる）を控える。
 2. 追加したいDatabaseを開き、Integrationを `Share` してアクセスを付与する。
 3. Chromeで `chrome://extensions` を開き、「デベロッパーモード」をON。
 4. 「パッケージ化されていない拡張機能を読み込む」でこのフォルダを選択。
