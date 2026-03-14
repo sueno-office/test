@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Notion Quick Post Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Notion Quick Post 設定</h1>
+
+      <label for="token">Notion Integration Token</label>
+      <input id="token" type="password" placeholder="secret_xxx" autocomplete="off" />
+      <p class="hint">secret_ から始まる Integration Token を入力してください。</p>
+
+      <button id="save-token" class="primary" type="button">保存</button>
+
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+
+    <script src="options.js" type="module"></script>
+  </body>
+</html>

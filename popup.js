@@ -1,13 +1,16 @@
 const NOTION_VERSION = "2022-06-28";
 
-const tokenInput = document.getElementById("token");
-const saveTokenButton = document.getElementById("save-token");
+const tokenWarning = document.getElementById("token-warning");
+const openOptionsInlineButton = document.getElementById("open-options-inline");
+const openOptionsButton = document.getElementById("open-options");
 const loadDbButton = document.getElementById("load-db");
 const databaseSelect = document.getElementById("database-select");
 const titleInput = document.getElementById("title");
 const bodyInput = document.getElementById("body");
 const createPageButton = document.getElementById("create-page");
 const statusText = document.getElementById("status");
+
+let notionToken = "";
 
 const setStatus = (message, type = "") => {
   statusText.textContent = message;
@@ -41,30 +44,43 @@ const findTitlePropertyName = (database) => {
   return null;
 };
 
+const openOptionsPage = async () => {
+  await chrome.runtime.openOptionsPage();
+};
+
+const applyTokenState = () => {
+  const hasToken = Boolean(notionToken);
+  tokenWarning.hidden = hasToken;
+  loadDbButton.disabled = !hasToken;
+  createPageButton.disabled = !hasToken;
+
+  if (!hasToken) {
+    setStatus("トークンが未設定です。設定画面から保存してください。", "error");
+  }
+};
+
+const requireToken = () => {
+  if (notionToken) {
+    return true;
+  }
+
+  applyTokenState();
+  return false;
+};
+
 const loadStoredSettings = async () => {
-  const { notionToken, selectedDatabaseId } = await chrome.storage.local.get([
+  const { notionToken: storedToken, selectedDatabaseId } = await chrome.storage.local.get([
     "notionToken",
     "selectedDatabaseId"
   ]);
 
-  if (notionToken) {
-    tokenInput.value = notionToken;
-  }
+  notionToken = (storedToken || "").trim();
 
   if (selectedDatabaseId) {
     databaseSelect.dataset.selectedDatabaseId = selectedDatabaseId;
   }
-};
 
-const saveToken = async () => {
-  const token = tokenInput.value.trim();
-  if (!token) {
-    setStatus("トークンを入力してください。", "error");
-    return;
-  }
-
-  await chrome.storage.local.set({ notionToken: token });
-  setStatus("トークンを保存しました。", "success");
+  applyTokenState();
 };
 
 const renderDatabaseOptions = (databases) => {
@@ -84,9 +100,7 @@ const renderDatabaseOptions = (databases) => {
 };
 
 const loadDatabases = async () => {
-  const token = tokenInput.value.trim();
-  if (!token) {
-    setStatus("先にトークンを入力してください。", "error");
+  if (!requireToken()) {
     return;
   }
 
@@ -94,7 +108,7 @@ const loadDatabases = async () => {
 
   const response = await fetch("https://api.notion.com/v1/search", {
     method: "POST",
-    headers: getHeaders(token),
+    headers: getHeaders(notionToken),
     body: JSON.stringify({
       filter: {
         value: "database",
@@ -124,20 +138,23 @@ const loadDatabases = async () => {
 };
 
 const createPage = async () => {
-  const token = tokenInput.value.trim();
+  if (!requireToken()) {
+    return;
+  }
+
   const databaseId = databaseSelect.value;
   const title = titleInput.value.trim();
   const body = bodyInput.value.trim();
 
-  if (!token || !databaseId || !title) {
-    setStatus("トークン・Database・タイトルは必須です。", "error");
+  if (!databaseId || !title) {
+    setStatus("Database・タイトルは必須です。", "error");
     return;
   }
 
   setStatus("Database情報を確認中...");
 
   const dbResponse = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
-    headers: getHeaders(token)
+    headers: getHeaders(notionToken)
   });
 
   if (!dbResponse.ok) {
@@ -194,7 +211,7 @@ const createPage = async () => {
 
   const response = await fetch("https://api.notion.com/v1/pages", {
     method: "POST",
-    headers: getHeaders(token),
+    headers: getHeaders(notionToken),
     body: JSON.stringify(payload)
   });
 
@@ -204,13 +221,14 @@ const createPage = async () => {
     return;
   }
 
-  await chrome.storage.local.set({ selectedDatabaseId: databaseId, notionToken: token });
+  await chrome.storage.local.set({ selectedDatabaseId: databaseId });
   titleInput.value = "";
   bodyInput.value = "";
   setStatus("Notionページを作成しました。", "success");
 };
 
-saveTokenButton.addEventListener("click", saveToken);
+openOptionsButton.addEventListener("click", openOptionsPage);
+openOptionsInlineButton.addEventListener("click", openOptionsPage);
 loadDbButton.addEventListener("click", loadDatabases);
 createPageButton.addEventListener("click", createPage);
 databaseSelect.addEventListener("change", async () => {
