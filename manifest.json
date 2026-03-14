@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Notion Quick Post",
+  "description": "Notionのデータベースを選択して、タイトルと本文を素早く追加するChrome拡張です。",
+  "version": "0.1.0",
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.notion.com/*"],
+  "action": {
+    "default_title": "Notion Quick Post",
+    "default_popup": "popup.html"
+  }
+}
