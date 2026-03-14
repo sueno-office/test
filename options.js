@@ -30,6 +30,7 @@ const loadStoredToken = async () => {
   const { notionToken } = await chrome.storage.local.get("notionToken");
   if (notionToken) {
     tokenInput.value = notionToken;
+    setStatus("保存済みのトークンを読み込みました。", "success");
   }
 };
 

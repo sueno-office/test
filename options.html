@@ -10,11 +10,24 @@
     <main class="container">
       <h1>Notion Quick Post 設定</h1>
 
-      <label for="token">Notion Integration Token</label>
-      <input id="token" type="password" placeholder="secret_xxx" autocomplete="off" />
-      <p class="hint">secret_ から始まる Integration Token を入力してください。</p>
+      <section class="card">
+        <h2>トークン設定</h2>
+        <label for="token">Notion Integration Token</label>
+        <input id="token" type="password" placeholder="secret_xxx" autocomplete="off" />
+        <p class="hint">secret_ から始まる Integration Token を入力してください。</p>
+        <button id="save-token" class="primary" type="button">保存</button>
+      </section>
 
-      <button id="save-token" class="primary" type="button">保存</button>
+      <section class="card">
+        <h2>使い方（初回）</h2>
+        <ol>
+          <li>NotionでIntegrationを作成し、Internal Integration Tokenを発行します。</li>
+          <li>利用したいDatabaseを開き、IntegrationをShareしてアクセス権を付与します。</li>
+          <li>この画面の「トークン設定」でトークンを保存します。</li>
+          <li>拡張ポップアップを開き「DB一覧を更新」を押してDatabase一覧を取得します。</li>
+          <li>Database・タイトル・本文・必要なプロパティを入力してNotionに追加します。</li>
+        </ol>
+      </section>
 
       <p id="status" class="status" aria-live="polite"></p>
     </main>
