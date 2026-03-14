@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Notion Quick Post</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Notion Quick Post</h1>
+
+      <label for="database-select">Database</label>
+      <select id="database-select">
+        <option value="">Databaseを選択してください</option>
+      </select>
+
+      <label for="title">タイトル</label>
+      <input id="title" type="text" placeholder="ページタイトル" />
+
+      <label for="body">本文</label>
+      <textarea id="body" rows="5" placeholder="本文を入力"></textarea>
+
+      <section>
+        <h2>プロパティ</h2>
+        <div id="property-fields" class="property-fields">
+          <p class="hint">Databaseを選択すると入力可能なプロパティが表示されます。</p>
+        </div>
+      </section>
+
+      <button id="create-page" class="primary" type="button">Notionに追加</button>
+
+      <p id="status" class="status" aria-live="polite"></p>
+
+      <details id="settings">
+        <summary>設定</summary>
+
+        <label for="token">Notion Integration Token</label>
+        <input id="token" type="password" placeholder="secret_xxx" autocomplete="off" />
+
+        <div class="row">
+          <button id="save-token" type="button">トークン保存</button>
+          <button id="load-db" type="button">DB一覧を更新</button>
+        </div>
+
+        <section class="help">
+          <h2>使い方（初回）</h2>
+          <ol>
+            <li>NotionでIntegrationを作成しトークンを発行</li>
+            <li>対象DatabaseにIntegrationを招待（Share）</li>
+            <li>設定でトークンを保存して「DB一覧を更新」を押す</li>
+          </ol>
+        </section>
+      </details>
+    </main>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>
