@@ -18,6 +18,12 @@ const propertyFields = document.getElementById("property-fields");
 const createPageButton = document.getElementById("create-page");
 const statusText = document.getElementById("status");
 
+const setLoading = (loading) => {
+  saveTokenButton.disabled = loading;
+  loadDbButton.disabled = loading;
+  createPageButton.disabled = loading;
+};
+
 const setStatus = (message, type = "") => {
   statusText.textContent = message;
   statusText.classList.remove("error", "success");
@@ -150,7 +156,7 @@ const buildPropertyPayload = () => {
 const loadDatabaseSchema = async (databaseId) => {
   if (!databaseId) {
     propertyFields.innerHTML = '<p class="hint">Databaseを選択すると入力可能なプロパティが表示されます。</p>';
-    return;
+    return null;
   }
 
   const { notionToken, databaseSchemas = {} } = await chrome.storage.local.get([
@@ -160,12 +166,12 @@ const loadDatabaseSchema = async (databaseId) => {
 
   if (databaseSchemas[databaseId]) {
     renderPropertyFields(databaseSchemas[databaseId]);
-    return;
+    return databaseSchemas[databaseId];
   }
 
   if (!notionToken) {
     propertyFields.innerHTML = '<p class="hint">設定でトークンを保存するとプロパティを読み込めます。</p>';
-    return;
+    return null;
   }
 
   const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
@@ -174,13 +180,14 @@ const loadDatabaseSchema = async (databaseId) => {
 
   if (!response.ok) {
     propertyFields.innerHTML = '<p class="hint">プロパティ取得に失敗しました。</p>';
-    return;
+    return null;
   }
 
   const schema = await response.json();
   databaseSchemas[databaseId] = schema;
   await chrome.storage.local.set({ databaseSchemas });
   renderPropertyFields(schema);
+  return schema;
 };
 
 const loadStoredSettings = async () => {
@@ -204,8 +211,13 @@ const saveToken = async () => {
     return;
   }
 
-  await chrome.storage.local.set({ notionToken: token });
-  setStatus("トークンを保存しました。", "success");
+  setLoading(true);
+  try {
+    await chrome.storage.local.set({ notionToken: token });
+    setStatus("トークンを保存しました。", "success");
+  } finally {
+    setLoading(false);
+  }
 };
 
 const loadDatabases = async () => {
@@ -215,44 +227,55 @@ const loadDatabases = async () => {
     return;
   }
 
+  setLoading(true);
   setStatus("Database一覧を取得中...");
 
-  const response = await fetch("https://api.notion.com/v1/search", {
-    method: "POST",
-    headers: getHeaders(token),
-    body: JSON.stringify({
-      filter: {
-        value: "database",
-        property: "object"
-      },
-      page_size: 100
-    })
-  });
+  try {
+    const response = await fetch("https://api.notion.com/v1/search", {
+      method: "POST",
+      headers: getHeaders(token),
+      body: JSON.stringify({
+        filter: {
+          value: "database",
+          property: "object"
+        },
+        page_size: 100
+      })
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    setStatus(`DB取得失敗: ${response.status} ${errorText}`, "error");
-    return;
+    if (!response.ok) {
+      const errorText = await response.text();
+      setStatus(`DB取得失敗: ${response.status} ${errorText}`, "error");
+      return;
+    }
+
+    const data = await response.json();
+    const databases = data.results || [];
+
+    if (!databases.length) {
+      setStatus("アクセス可能なDatabaseが見つかりません。", "error");
+      return;
+    }
+
+    const { databaseSchemas = {} } = await chrome.storage.local.get(["databaseSchemas"]);
+    const currentDatabaseIds = new Set(databases.map((db) => db.id));
+    const nextDatabaseSchemas = Object.fromEntries(
+      Object.entries(databaseSchemas).filter(([databaseId]) => currentDatabaseIds.has(databaseId))
+    );
+
+    const selectedDatabaseId = databaseSelect.value || databases[0].id;
+    await chrome.storage.local.set({
+      notionToken: token,
+      notionDatabases: databases,
+      selectedDatabaseId,
+      databaseSchemas: nextDatabaseSchemas
+    });
+
+    await renderDatabases(databases, selectedDatabaseId);
+    setStatus(`${databases.length}件のDatabaseを保存しました。`, "success");
+  } finally {
+    setLoading(false);
   }
-
-  const data = await response.json();
-  const databases = data.results || [];
-
-  if (!databases.length) {
-    setStatus("アクセス可能なDatabaseが見つかりません。", "error");
-    return;
-  }
-
-  const selectedDatabaseId = databaseSelect.value || databases[0].id;
-  await chrome.storage.local.set({
-    notionToken: token,
-    notionDatabases: databases,
-    selectedDatabaseId,
-    databaseSchemas: {}
-  });
-
-  await renderDatabases(databases, selectedDatabaseId);
-  setStatus(`${databases.length}件のDatabaseを保存しました。`, "success");
 };
 
 const createPage = async () => {
@@ -268,7 +291,11 @@ const createPage = async () => {
   }
 
   const { databaseSchemas = {} } = await chrome.storage.local.get(["databaseSchemas"]);
-  const database = databaseSchemas[databaseId];
+  let database = databaseSchemas[databaseId];
+
+  if (!database) {
+    database = await loadDatabaseSchema(databaseId);
+  }
 
   if (!database) {
     setStatus("Database情報がありません。設定からDB一覧を更新してください。", "error");
@@ -303,36 +330,41 @@ const createPage = async () => {
     ];
   }
 
+  setLoading(true);
   setStatus("ページ作成中...");
 
-  const response = await fetch("https://api.notion.com/v1/pages", {
-    method: "POST",
-    headers: getHeaders(token),
-    body: JSON.stringify(payload)
-  });
+  try {
+    const response = await fetch("https://api.notion.com/v1/pages", {
+      method: "POST",
+      headers: getHeaders(token),
+      body: JSON.stringify(payload)
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    setStatus(`作成失敗: ${response.status} ${errorText}`, "error");
-    return;
-  }
-
-  await chrome.storage.local.set({ selectedDatabaseId: databaseId, notionToken: token });
-  titleInput.value = "";
-  bodyInput.value = "";
-  propertyFields.querySelectorAll("[data-property-name]").forEach((field) => {
-    if (field.type === "checkbox") {
-      field.checked = false;
-    } else if (field.multiple) {
-      Array.from(field.options).forEach((option) => {
-        option.selected = false;
-      });
-    } else {
-      field.value = "";
+    if (!response.ok) {
+      const errorText = await response.text();
+      setStatus(`作成失敗: ${response.status} ${errorText}`, "error");
+      return;
     }
-  });
 
-  setStatus("Notionページを作成しました。", "success");
+    await chrome.storage.local.set({ selectedDatabaseId: databaseId, notionToken: token });
+    titleInput.value = "";
+    bodyInput.value = "";
+    propertyFields.querySelectorAll("[data-property-name]").forEach((field) => {
+      if (field.type === "checkbox") {
+        field.checked = false;
+      } else if (field.multiple) {
+        Array.from(field.options).forEach((option) => {
+          option.selected = false;
+        });
+      } else {
+        field.value = "";
+      }
+    });
+
+    setStatus("Notionページを作成しました。", "success");
+  } finally {
+    setLoading(false);
+  }
 };
 
 saveTokenButton.addEventListener("click", saveToken);
