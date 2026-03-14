@@ -10,11 +10,13 @@
     <main class="container">
       <h1>Notion Quick Post</h1>
 
-      <label for="token">Notion Integration Token</label>
-      <input id="token" type="password" placeholder="secret_xxx" autocomplete="off" />
+      <div id="token-warning" class="token-warning" hidden>
+        <p>Notion Integration Token が未設定です。</p>
+        <button id="open-options-inline" type="button">設定を開く</button>
+      </div>
 
       <div class="row">
-        <button id="save-token" type="button">トークン保存</button>
+        <button id="open-options" type="button">設定を開く</button>
         <button id="load-db" type="button">DB一覧を取得</button>
       </div>
 
@@ -38,7 +40,7 @@
         <ol>
           <li>NotionでIntegrationを作成しトークンを発行</li>
           <li>対象DatabaseにIntegrationを招待（Share）</li>
-          <li>この拡張にトークンを保存→DB一覧取得</li>
+          <li>設定画面でトークンを保存→DB一覧取得</li>
         </ol>
       </details>
     </main>
